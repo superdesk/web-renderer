@@ -277,7 +277,7 @@ class Article implements ArticleInterface
         return $this->publishedAt;
     }
 
-    public function setPublishedAt(\DateTime $publishedAt)
+    public function setPublishedAt(?\DateTime $publishedAt)
     {
         $this->publishedAt = $publishedAt;
     }

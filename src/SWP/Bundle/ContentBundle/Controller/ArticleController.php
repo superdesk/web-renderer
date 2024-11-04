@@ -20,6 +20,7 @@ use SWP\Bundle\ContentBundle\Form\Type\ArticleType;
 use SWP\Bundle\ContentBundle\Provider\ArticleProviderInterface;
 use SWP\Bundle\ContentBundle\Provider\RouteProviderInterface;
 use SWP\Bundle\ContentBundle\Service\ArticleServiceInterface;
+use SWP\Bundle\CoreBundle\Repository\PackageRepositoryInterface;
 use SWP\Component\Common\Criteria\Criteria;
 use SWP\Component\Common\Pagination\PaginationData;
 use SWP\Component\Common\Response\ResourcesListResponse;
@@ -43,6 +44,7 @@ class ArticleController extends AbstractController {
   private EventDispatcherInterface  $eventDispatcher;
   private EntityManagerInterface $entityManager; // swp.object_manager.article
   private ArticleServiceInterface $articleService; // swp.service.article
+  private PackageRepositoryInterface $packageRepository;
 
   /**
    * @param FormFactoryInterface $formFactory
@@ -52,11 +54,12 @@ class ArticleController extends AbstractController {
    * @param EventDispatcherInterface $eventDispatcher
    * @param EntityManagerInterface $entityManager
    * @param ArticleServiceInterface $articleService
+   * @param PackageRepositoryInterface $packageRepository
    */
   public function __construct(FormFactoryInterface       $formFactory, RouteProviderInterface $routeProvider,
                               ArticleRepositoryInterface $articleRepository, ArticleProviderInterface $articleProvider,
                               EventDispatcherInterface   $eventDispatcher, EntityManagerInterface $entityManager,
-                              ArticleServiceInterface    $articleService) {
+                              ArticleServiceInterface    $articleService, PackageRepositoryInterface   $packageRepository) {
     $this->formFactory = $formFactory;
     $this->routeProvider = $routeProvider;
     $this->articleRepository = $articleRepository;
@@ -64,6 +67,7 @@ class ArticleController extends AbstractController {
     $this->eventDispatcher = $eventDispatcher;
     $this->entityManager = $entityManager;
     $this->articleService = $articleService;
+    $this->packageRepository = $packageRepository;
   }
 
 
@@ -123,25 +127,21 @@ class ArticleController extends AbstractController {
   public function getByCodeAction(Request $request): SingleResourceResponseInterface {
     // Extract parameters from the request
     $code = $request->query->get('code', '');
-
-    $article = $this->entityManager->createQuery('SELECT a.id FROM SWP\Bundle\ContentBundle\Model\Article a where a.code = :code')
-        ->setParameter('code', $code)
-        //->setParameter('tenant_code', $tenantCode)
-        ->setMaxResults(1)
-        ->getOneOrNullResult();
+    $article = $this->articleRepository->findOneBy(['code' => $code]);
 
     if (null === $article) {
       throw new NotFoundHttpException('Article was not found');
     }
 
     $article->setStatus('new');
-    $article->setRouteId(null);
+    $article->setRoute(null);
     $article->setPublishedAt(null);
     $article->setIsPublishable(false);
+    $article->isPublished(false);
     $this->entityManager->flush();
 
     // Find the swp_package associated with the article
-    $swpPackage = $article->getPackage();
+    $swpPackage = $this->packageRepository->findOneBy(['guid' => $code]);
 
     if (null !== $swpPackage) {
         // Update the swp_package fields

@@ -78,7 +78,7 @@ interface ArticleInterface extends TimestampableInterface, TimestampableCancelIn
    *
    * @return \DateTime
    */
-  public function setPublishedAt(\DateTime $publishedAt);
+  public function setPublishedAt(?\DateTime $publishedAt);
 
   /**
    * @return bool
