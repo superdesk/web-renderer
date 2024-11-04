@@ -123,9 +123,6 @@ class ArticleController extends AbstractController {
   public function getByCodeAction(Request $request): SingleResourceResponseInterface {
     // Extract parameters from the request
     $code = $request->query->get('code', '');
-    //$tenantCode = $request->query->get('tenant_code', '');
-
-    //var_dump($code, $tenantCode);
 
     $article = $this->entityManager->createQuery('SELECT a.id FROM SWP\Bundle\ContentBundle\Model\Article a where a.code = :code')
         ->setParameter('code', $code)
@@ -135,6 +132,23 @@ class ArticleController extends AbstractController {
 
     if (null === $article) {
       throw new NotFoundHttpException('Article was not found');
+    }
+
+    $article->setStatus('new');
+    $article->setRouteId(null);
+    $article->setPublishedAt(null);
+    $article->setIsPublishable(false);
+    $this->entityManager->flush();
+
+    // Find the swp_package associated with the article
+    $swpPackage = $article->getPackage();
+
+    if (null !== $swpPackage) {
+        // Update the swp_package fields
+        $swpPackage->setStatus('new');
+        $swpPackage->setServices([]);
+        $swpPackage->setFirstPublishedAt(null);
+        $this->entityManager->flush();
     }
 
     return new SingleResourceResponse($article);
