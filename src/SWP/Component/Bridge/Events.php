@@ -72,6 +72,24 @@ final class Events
      */
     const PACKAGE_PROCESSED = 'swp.bridge.package_processed';
 
+    /**
+     * The PACKAGE_PRE_OPTIONS event occurs before package update/insert.
+     *
+     * @Event("Symfony\Component\EventDispatcher\GenericEvent")
+     *
+     * @var string
+     */
+    const PACKAGE_PRE_OPTIONS = 'swp.bridge.package_pre_options';
+
+    /**
+     * The PACKAGE_POST_OPTIONS event occurs after package update/insert.
+     *
+     * @Event("Symfony\Component\EventDispatcher\GenericEvent")
+     *
+     * @var string
+     */
+    const PACKAGE_POST_OPTIONS = 'swp.bridge.package_post_options';
+
     private function __construct()
     {
     }

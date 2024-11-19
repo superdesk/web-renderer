@@ -25,7 +25,8 @@ class ContentPushHandler extends AbstractContentPushHandler
         $content = $contentPushMessage->getContent();
         $tenantId = $contentPushMessage->getTenantId();
         $package = $this->jsonToPackageTransformer->transform($content);
+        $options = $contentPushMessage->getOptions();
 
-        $this->execute($tenantId, $package);
+        $this->execute($tenantId, $package, $options);
     }
 }

@@ -23,11 +23,13 @@ class ContentPushMessage implements MessageInterface
 
     /** @var string */
     private $content;
+    protected array $options = [];
 
-    public function __construct(int $tenantId, string $content)
+    public function __construct(int $tenantId, string $content, array $options = [])
     {
         $this->tenantId = $tenantId;
         $this->content = $content;
+        $this->options = $options;
     }
 
     public function getTenantId(): int
@@ -40,11 +42,20 @@ class ContentPushMessage implements MessageInterface
         return $this->content;
     }
 
+    /**
+     * @return array
+     */
+    public function getOptions(): array
+    {
+        return $this->options;
+    }
+
     public function toArray(): array
     {
         return [
-          'tenant' => $this->tenantId,
-          'content' => $this->content,
+            'tenant' => $this->tenantId,
+            'content' => $this->content,
+            'options' => $this->options
         ];
     }
 }
