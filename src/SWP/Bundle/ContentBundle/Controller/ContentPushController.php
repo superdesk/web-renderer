@@ -104,20 +104,25 @@ class ContentPushController extends AbstractController {
 
 
     /**
-     * @Route("/api/{version}/content/push-with-status/{status}", methods={"POST"}, options={"expose"=true}, defaults={"version"="v2"}, name="swp_api_content_push_with_status")
+     * @Route("/api/{version}/content/push-with-options", methods={"POST"}, options={"expose"=true}, defaults={"version"="v2"}, name="swp_api_content_push_with_status")
      */
     public function pushContentWithOptionsAction(
         Request $request,
-        TenantContextInterface $tenantContext,
-        string $status
+        TenantContextInterface $tenantContext
     ): SingleResourceResponseInterface {
+        $status = $request->query->get('status', '');
+        $request->getQueryString();
         $package = $this->dataTransformer->transform($request->getContent());
         $this->eventDispatcher->dispatch(new GenericEvent($package), Events::SWP_VALIDATION);
 
         $currentTenant = $tenantContext->getTenant();
 
+        $options = [];
+        if (!empty($status)) {
+            $options['status'] = $status;
+        }
         $this->messageBus->dispatch(
-            new ContentPushMessage($currentTenant->getId(), $request->getContent(), ['status' => $status])
+            new ContentPushMessage($currentTenant->getId(), $request->getContent(), $options)
         );
         $package = $this->packageRepository->findOneBy(['guid' => $package->getGuid()]);
 
