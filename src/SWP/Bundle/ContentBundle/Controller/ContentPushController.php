@@ -124,24 +124,8 @@ class ContentPushController extends AbstractController {
         $this->messageBus->dispatch(
             new ContentPushMessage($currentTenant->getId(), $request->getContent(), $options)
         );
-        $package = $this->packageRepository->findOneBy(['guid' => $package->getGuid()]);
-
-        $articles = $this->articleRepository
-            ->getArticlesByPackage($package)
-            ->getQuery()
-            ->getResult();
-
-        $articles_ids = [];
-        foreach ($articles as $article) {
-            $articles_ids[] = $article->getId();
-        }
-        return new SingleResourceResponse(
-            [
-                'package_id' => $package->getId(),
-                'article_ids' => $articles_ids
-            ],
-            new ResponseContext(201)
-        );
+      
+        return new SingleResourceResponse(['status' => 'OK'], new ResponseContext(201));
     }
 
   /**
