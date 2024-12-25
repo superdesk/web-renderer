@@ -26,6 +26,7 @@ services:
       $mediaManager: '@swp_content_bundle.manager.media'
       $entityManager: '@swp.object_manager.media'
       $packageRepository: '@swp.repository.package'
+      $articleRepository: '@swp.repository.article'
 
   SWP\Bundle\ContentBundle\Controller\MediaController: ~
   SWP\Bundle\ContentBundle\Controller\RelatedArticleController:

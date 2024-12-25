@@ -18,6 +18,7 @@ namespace SWP\Bundle\ContentBundle\Controller;
 
 use Doctrine\ORM\EntityManagerInterface;
 use SWP\Bundle\BridgeBundle\Doctrine\ORM\PackageRepository;
+use SWP\Bundle\ContentBundle\Doctrine\ArticleRepositoryInterface;
 use SWP\Bundle\CoreBundle\Util\MimeTypeHelper;
 use SWP\Component\MultiTenancy\Context\TenantContextInterface;
 use Symfony\Component\Mime\MimeTypes;
@@ -48,6 +49,7 @@ class ContentPushController extends AbstractController {
   private MediaManagerInterface $mediaManager; // swp_content_bundle.manager.media
   private EntityManagerInterface $entityManager; // swp.object_manager.media
   private PackageRepository $packageRepository;//swp.repository.package
+  private  ArticleRepositoryInterface $articleRepository;//swp.repository.article
   private FileProviderInterface $fileProvider;
 
     /**
@@ -58,13 +60,20 @@ class ContentPushController extends AbstractController {
      * @param MediaManagerInterface $mediaManager
      * @param EntityManagerInterface $entityManager
      * @param PackageRepository $packageRepository
+     * @param ArticleRepositoryInterface $articleRepository
      * @param FileProviderInterface $fileProvider
      */
-  public function __construct(EventDispatcherInterface $eventDispatcher, FormFactoryInterface $formFactory,
-                              MessageBusInterface      $messageBus,
-                              DataTransformerInterface $dataTransformer, MediaManagerInterface $mediaManager,
-                              EntityManagerInterface   $entityManager, PackageRepository $packageRepository,
-                              FileProviderInterface    $fileProvider) {
+  public function __construct(
+      EventDispatcherInterface $eventDispatcher,
+      FormFactoryInterface $formFactory,
+      MessageBusInterface $messageBus,
+      DataTransformerInterface $dataTransformer,
+      MediaManagerInterface $mediaManager,
+      EntityManagerInterface $entityManager,
+      PackageRepository $packageRepository,
+      ArticleRepositoryInterface $articleRepository,
+      FileProviderInterface    $fileProvider
+  ) {
     $this->eventDispatcher = $eventDispatcher;
     $this->formFactory = $formFactory;
     $this->messageBus = $messageBus;
@@ -72,6 +81,7 @@ class ContentPushController extends AbstractController {
     $this->mediaManager = $mediaManager;
     $this->entityManager = $entityManager;
     $this->packageRepository = $packageRepository;
+    $this->articleRepository = $articleRepository;
     $this->fileProvider = $fileProvider;
   }
 
@@ -85,10 +95,38 @@ class ContentPushController extends AbstractController {
 
     $currentTenant = $tenantContext->getTenant();
 
-    $this->messageBus->dispatch(new ContentPushMessage($currentTenant->getId(), $request->getContent()));
+    $this->messageBus->dispatch(
+        new ContentPushMessage($currentTenant->getId(), $request->getContent())
+    );
 
     return new SingleResourceResponse(['status' => 'OK'], new ResponseContext(201));
   }
+
+
+    /**
+     * @Route("/api/{version}/content/push-with-options", methods={"POST"}, options={"expose"=true}, defaults={"version"="v2"}, name="swp_api_content_push_with_status")
+     */
+    public function pushContentWithOptionsAction(
+        Request $request,
+        TenantContextInterface $tenantContext
+    ): SingleResourceResponseInterface {
+        $status = $request->query->get('status', '');
+        $request->getQueryString();
+        $package = $this->dataTransformer->transform($request->getContent());
+        $this->eventDispatcher->dispatch(new GenericEvent($package), Events::SWP_VALIDATION);
+
+        $currentTenant = $tenantContext->getTenant();
+
+        $options = [];
+        if (!empty($status)) {
+            $options['status'] = $status;
+        }
+        $this->messageBus->dispatch(
+            new ContentPushMessage($currentTenant->getId(), $request->getContent(), $options)
+        );
+      
+        return new SingleResourceResponse(['status' => 'OK'], new ResponseContext(201));
+    }
 
   /**
    * @Route("/api/{version}/assets/push", methods={"POST"}, options={"expose"=true}, defaults={"version"="v2"}, name="swp_api_assets_push")

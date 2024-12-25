@@ -79,7 +79,7 @@ abstract class AbstractContentPushHandler implements MessageHandlerInterface
         $this->lockFactory = $lockFactory;
     }
 
-    public function execute(int $tenantId, PackageInterface $package): void
+    public function execute(int $tenantId, PackageInterface $package, array $options = []): void
     {
         $lock = $this->lockFactory->createLock($this->generateLockId($package->getGuid()), 120);
 
@@ -88,7 +88,7 @@ abstract class AbstractContentPushHandler implements MessageHandlerInterface
                 throw new LockConflictedException();
             }
 
-            $this->doExecute($tenantId, $package);
+            $this->doExecute($tenantId, $package, $options);
         } catch (UniqueConstraintViolationException $e) {
             $this->logException($e, $package, 'UniqueConstraintViolationException exception');
 
@@ -119,7 +119,7 @@ abstract class AbstractContentPushHandler implements MessageHandlerInterface
         return md5(json_encode(['type' => 'package', 'guid' => $guid]));
     }
 
-    private function doExecute(int $tenantId, PackageInterface $package): void
+    private function doExecute(int $tenantId, PackageInterface $package, array $options = []): void
     {
         $packageType = $package->getType();
         if (ItemInterface::TYPE_TEXT !== $packageType && ItemInterface::TYPE_COMPOSITE !== $packageType) {
@@ -133,22 +133,64 @@ abstract class AbstractContentPushHandler implements MessageHandlerInterface
         if (null !== $existingPackage) {
             $existingPackage = $this->packageHydrator->hydrate($package, $existingPackage);
 
+            if (!empty($options)) {
+                $this->eventDispatcher->dispatch(
+                    new GenericEvent(
+                        [
+                            'package' => $existingPackage,
+                            'options' => $options,
+                        ],
+                        ['eventName' => Events::PACKAGE_PRE_OPTIONS]
+                    ),
+                    Events::PACKAGE_PRE_OPTIONS);
+            }
             $this->eventDispatcher->dispatch( new GenericEvent($existingPackage, ['eventName' => Events::PACKAGE_PRE_UPDATE]), Events::PACKAGE_PRE_UPDATE);
             $this->packageObjectManager->flush();
             $this->eventDispatcher->dispatch( new GenericEvent($existingPackage, ['eventName' => Events::PACKAGE_POST_UPDATE]), Events::PACKAGE_POST_UPDATE);
             $this->eventDispatcher->dispatch( new GenericEvent($existingPackage, ['eventName' => Events::PACKAGE_PROCESSED]), Events::PACKAGE_PROCESSED);
             $this->packageObjectManager->flush();
 
-            $this->reset();
             $this->logger->info(sprintf('Package %s was updated', $existingPackage->getGuid()));
 
+            if (!empty($options)) {
+                $this->eventDispatcher->dispatch(
+                    new GenericEvent(
+                        ['package' => $existingPackage, 'options' => $options],
+                        ['eventName' => Events::PACKAGE_POST_OPTIONS]
+                    ),
+                    Events::PACKAGE_POST_OPTIONS
+                );
+            }
+
+            $this->reset();
             return;
+        }
+
+        if (!empty($options)) {
+            $this->eventDispatcher->dispatch(
+                new GenericEvent(
+                    ['package' => $package, 'options' => $options],
+                    ['eventName' => Events::PACKAGE_PRE_OPTIONS]
+                ),
+                Events::PACKAGE_PRE_OPTIONS
+            );
         }
 
         $this->eventDispatcher->dispatch( new GenericEvent($package, ['eventName' => Events::PACKAGE_PRE_CREATE]), Events::PACKAGE_PRE_CREATE);
         $this->packageRepository->add($package);
         $this->eventDispatcher->dispatch( new GenericEvent($package, ['eventName' => Events::PACKAGE_POST_CREATE]), Events::PACKAGE_POST_CREATE);
         $this->eventDispatcher->dispatch( new GenericEvent($package, ['eventName' => Events::PACKAGE_PROCESSED]), Events::PACKAGE_PROCESSED);
+
+        if (!empty($options)) {
+            $this->eventDispatcher->dispatch(
+                new GenericEvent(
+                    ['package' => $package, 'options' => $options],
+                    ['eventName' => Events::PACKAGE_POST_OPTIONS]
+                ),
+                Events::PACKAGE_POST_OPTIONS
+            );
+        }
+
         $this->packageObjectManager->flush();
 
         $this->logger->info(sprintf('Package %s was created', $package->getGuid()));

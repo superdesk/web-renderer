@@ -662,6 +662,22 @@ services:
             - { name: kernel.event_listener, event: swp.bridge.package_pre_update, method: processAuthors }
             - { name: kernel.event_listener, event: swp.bridge.package_pre_create, method: processAuthors }
 
+    SWP\Bundle\CoreBundle\EventListener\PackageOptionsListener:
+        arguments:
+            - '@swp.object_manager.publish_destination'
+            - '@swp.object_manager.package'
+            - '@swp.repository.article'
+            - '@swp.object_manager.article'
+            - '@SWP\Bundle\CoreBundle\Provider\PublishDestinationProvider'
+            - '@event_dispatcher'
+        calls:
+            - method: setLogger
+              arguments:
+                  - '@logger'
+        tags:
+            - { name: kernel.event_listener, event: swp.bridge.package_pre_options, method: prePackageOptions }
+            - { name: kernel.event_listener, event: swp.bridge.package_post_options, method: postPackageOptions }
+
     SWP\Bundle\CoreBundle\Serializer\SettingSerializationSubscriber:
         tags:
             - { name: jms_serializer.event_subscriber }
