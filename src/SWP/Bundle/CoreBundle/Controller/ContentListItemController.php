@@ -192,11 +192,20 @@ class ContentListItemController extends AbstractController {
       }
 
       $updatedArticles = [];
+      $updatedItemsInvalidateCache = [];
       /** @var ContentListAction $item */
       foreach ($data['items'] as $item) {
         $position = $item->getPosition();
         $isSticky = $item->isSticky();
         $contentId = $item->getContentId();
+
+        $updatedItemsInvalidateCache[] = [
+            'id' => $contentId,
+            'action' => $item->getAction(),
+            'sticky' => $item->isSticky(),
+            'postition' => $item->getPosition()
+        ];
+
 
         switch ($item->getAction()) {
           case ContentListAction::ACTION_MOVE:
@@ -268,7 +277,8 @@ class ContentListItemController extends AbstractController {
                 'id' => $list->getId(),
                 'name' => $list->getName(),
                 'type' => $list->getType(),
-                'action' => 'BATCH-UPDATE'
+                'action' => 'BATCH-UPDATE',
+                'items' => $updatedItemsInvalidateCache
             ]
         );
 
