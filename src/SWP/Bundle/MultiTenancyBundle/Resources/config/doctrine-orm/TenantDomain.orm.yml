@@ -1,0 +1,43 @@
+SWP\Component\MultiTenancy\Model\TenantDomain:
+    type: entity
+    table: swp_tenant_domain
+    repositoryClass: SWP\Bundle\MultiTenancyBundle\Doctrine\ORM\TenantDomainRepository
+    gedmo:
+        soft_deleteable:
+            field_name: deletedAt
+            time_aware: false
+    id:
+        id:
+            type: integer
+            id: true
+            generator:
+                strategy: AUTO
+    fields:
+        subdomain:
+            type: string
+            length: 255
+            nullable: true
+        domainName:
+            type: string
+            nullable: true
+
+        createdAt:
+            type: datetime
+            gedmo:
+                timestampable:
+                    on: create
+        updatedAt:
+            type: datetime
+            nullable: true
+            gedmo:
+                timestampable:
+                    on: update
+        deletedAt:
+            type: datetime
+            nullable: true
+    manyToOne:
+        tenant:
+            targetEntity: SWP\Component\MultiTenancy\Model\TenantInterface
+            joinColumn:
+                name: tenant_id
+                referencedColumnName: id

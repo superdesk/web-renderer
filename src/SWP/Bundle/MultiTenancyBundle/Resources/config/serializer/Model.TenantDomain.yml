@@ -1,0 +1,27 @@
+SWP\Component\MultiTenancy\Model\TenantDomain:
+    exclusion_policy: ALL
+    properties:
+        id:
+            expose: true
+            groups: [api, api_tenant_list]
+            type: integer
+        subdomain:
+            expose: true
+            groups: [api, api_tenant_list]
+            type: string
+        domainName:
+            expose: true
+            groups: [api, api_tenant_list]
+            type: string
+        createdAt:
+            expose: true
+            groups: [api]
+            type: DateTime
+        updatedAt:
+            expose: true
+            groups: [api]
+            type: DateTime
+        tenant:
+            expose: true
+            groups: [api]
+            type: SWP\Component\MultiTenancy\Model\Tenant

@@ -19,7 +19,9 @@ use Pdp\ResolvedDomainName;
 use Pdp\Rules;
 use Psr\Cache\InvalidArgumentException;
 use SWP\Component\MultiTenancy\Exception\TenantNotFoundException;
+use SWP\Component\MultiTenancy\Model\TenantDomainInterface;
 use SWP\Component\MultiTenancy\Model\TenantInterface;
+use SWP\Component\MultiTenancy\Repository\TenantDomainRepositoryInterface;
 use SWP\Component\MultiTenancy\Repository\TenantRepositoryInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -32,17 +34,20 @@ class TenantResolver implements TenantResolverInterface
     private string $suffixListFilename;
 
     private TenantRepositoryInterface $tenantRepository;
+    private TenantDomainRepositoryInterface $tenantDomainRepository;
 
     /**
      * @throws InvalidArgumentException
      */
     public function __construct(
         TenantRepositoryInterface $tenantRepository,
+        TenantDomainRepositoryInterface $tenantDomainRepository,
         CacheInterface            $cacheProvider,
         string                    $suffixListFilename,
     )
     {
         $this->tenantRepository = $tenantRepository;
+        $this->tenantDomainRepository = $tenantDomainRepository;
         $this->cacheProvider = $cacheProvider;
         $this->suffixListFilename = $suffixListFilename;
     }
@@ -58,11 +63,33 @@ class TenantResolver implements TenantResolverInterface
             $tenant = $this->tenantRepository->findOneByDomain($domain);
         }
 
-        if (null === $tenant) {
+        if ($tenant instanceof TenantInterface) {
+            return $tenant;
+        }
+
+        return $this->resolveByDomain($host);
+    }
+
+    /**
+     * @param string $host
+     * @return TenantInterface|null
+     */
+    protected function resolveByDomain(string $host): ?TenantInterface
+    {
+        $domain = $this->extractDomain($host);
+        $subDomain = $this->extractSubdomain($host);
+        if ($subDomain) {
+            // First check if there is domain defined in TenantDomain table
+            $tenantDomain = $this->tenantDomainRepository->findOneBySubdomainAndDomain($subDomain, $domain);
+        } else {
+            $tenantDomain = $this->tenantDomainRepository->findOneByDomain($domain);
+        }
+
+        if (!$tenantDomain instanceof TenantDomainInterface) {
             throw new TenantNotFoundException($host);
         }
 
-        return $tenant;
+        return $tenantDomain->getTenant();
     }
 
     protected function extractDomain(string $host = null): string

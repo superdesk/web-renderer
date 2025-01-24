@@ -15,6 +15,7 @@
 namespace SWP\Bundle\MultiTenancyBundle\DependencyInjection;
 
 use SWP\Bundle\MultiTenancyBundle\Doctrine\ORM\OrganizationRepository;
+use SWP\Bundle\MultiTenancyBundle\Doctrine\ORM\TenantDomainRepository;
 use SWP\Bundle\MultiTenancyBundle\Doctrine\ORM\TenantRepository;
 use SWP\Bundle\MultiTenancyBundle\Doctrine\PHPCR\OrganizationRepository as PHPCROrganizationRepository;
 use SWP\Bundle\MultiTenancyBundle\Doctrine\PHPCR\TenantRepository as PHPCRTenantRepository;
@@ -24,6 +25,8 @@ use SWP\Component\MultiTenancy\Factory\TenantFactory;
 use SWP\Component\MultiTenancy\Model\Organization;
 use SWP\Component\MultiTenancy\Model\OrganizationInterface;
 use SWP\Component\MultiTenancy\Model\Tenant;
+use SWP\Component\MultiTenancy\Model\TenantDomain;
+use SWP\Component\MultiTenancy\Model\TenantDomainInterface;
 use SWP\Component\MultiTenancy\Model\TenantInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -125,6 +128,15 @@ class Configuration implements ConfigurationInterface
                                                 ->scalarNode('interface')->cannotBeEmpty()->defaultValue(TenantInterface::class)->end()
                                                 ->scalarNode('repository')->defaultValue(TenantRepository::class)->end()
                                                 ->scalarNode('factory')->defaultValue(TenantFactory::class)->end()
+                                                ->scalarNode('object_manager_name')->defaultValue(null)->end()
+                                            ->end()
+                                        ->end()
+                                        ->arrayNode('tenantDomain')
+                                            ->addDefaultsIfNotSet()
+                                            ->children()
+                                                ->scalarNode('model')->cannotBeEmpty()->defaultValue(TenantDomain::class)->end()
+                                                ->scalarNode('interface')->cannotBeEmpty()->defaultValue(TenantDomainInterface::class)->end()
+                                                ->scalarNode('repository')->defaultValue(TenantDomainRepository::class)->end()
                                                 ->scalarNode('object_manager_name')->defaultValue(null)->end()
                                             ->end()
                                         ->end()

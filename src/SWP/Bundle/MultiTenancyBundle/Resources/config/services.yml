@@ -23,6 +23,7 @@ services:
             $suffixListFilename: '%env(PUBLIC_SUFFIX_LIST_FILENAME)%'
         arguments:
             - '@swp.repository.tenant'
+            - '@swp.repository.tenantDomain'
             - '@doctrine.system_cache_pool'
 
     swp_multi_tenancy.tenant_context:
